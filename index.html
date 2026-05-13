@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#185fa5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Asistente Docente" />
+  <title>Asistente Docente</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a18;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e0dfd8;
+      padding: 14px 16px 10px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header-top {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 10px;
+    }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .header p  { font-size: 12px; color: #777770; }
+
+    /* ── TABS ── */
+    .tabs { display: flex; gap: 6px; }
+    .tab {
+      flex: 1; padding: 8px 4px; font-size: 13px;
+      border: 1px solid #d8d7d0; border-radius: 8px;
+      background: transparent; color: #777770;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .tab.active {
+      background: #e6f1fb; color: #185fa5;
+      border-color: #b5d4f4; font-weight: 600;
+    }
+
+    /* ── SECTIONS ── */
+    .section { padding: 16px; display: none; }
+    .section.active { display: block; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a18; color: #fff;
+      padding: 10px 22px; border-radius: 20px;
+      font-size: 13px; opacity: 0; transition: opacity .25s;
+      pointer-events: none; z-index: 999;
+      white-space: nowrap; max-width: 88vw; text-align: center;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── MIC ── */
+    .mic-area { text-align: center; padding: 18px 0 10px; }
+    .mic-btn {
+      width: 82px; height: 82px; border-radius: 50%;
+      border: 2px solid #d8d7d0; background: #f0efe8;
+      cursor: pointer; font-size: 30px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all .2s; color: #777770;
+    }
+    .mic-btn.recording {
+      border-color: #e24b4a; background: #fcebeb;
+      animation: pulse 1s infinite; color: #a32d2d;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+    .mic-status { font-size: 13px; color: #777770; margin-top: 10px; }
+
+    /* ── WAVEFORM ── */
+    .waveform {
+      display: none; align-items: center;
+      justify-content: center; gap: 3px;
+      height: 32px; margin: 8px 0;
+    }
+    .waveform span {
+      display: inline-block; width: 4px;
+      border-radius: 2px; background: #e24b4a;
+      height: 6px; transition: height .1s;
+    }
+
+    /* ── TRANSCRIPT ── */
+    .transcript-box {
+      background: #f0efe8; border: 1px solid #d8d7d0;
+      border-radius: 8px; padding: 12px; min-height: 60px;
+      margin: 12px 0; font-size: 14px; line-height: 1.5;
+    }
+    .transcript-box.placeholder { color: #aaa; font-style: italic; }
+
+    /* ── DETECTED CARD ── */
+    .detected-card {
+      background: #fff; border: 1px solid #d8d7d0;
+      border-radius: 12px; padding: 14px; margin: 12px 0; display: none;
+    }
+    .detected-label {
+      font-size: 11px; color: #999;
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
+    }
+    .detected-name { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+    .action-btns { display: flex; gap: 8px; margin-top: 12px; }
+
+    /* ── FORM ── */
+    .field-label { font-size: 12px; color: #777770; margin-bottom: 5px; }
+    .field-row   { display: flex; gap: 8px; margin-bottom: 12px; }
+    input[type="text"] {
+      flex: 1; padding: 9px 12px; font-size: 14px;
+      border: 1px solid #d8d7d0; border-radius: 8px;
+      background: #fff; color: #1a1a18; font-family: inherit; width: 100%;
+    }
+    input[type="text"]:focus { outline: none; border-color: #185fa5; }
+    select {
+      width: 100%; padding: 9px 12px; font-size: 14px;
+      border: 1px solid #d8d7d0; border-radius: 8px;
+      background: #fff; color: #1a1a18; font-family: inherit;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      flex: 1; padding: 9px 8px; font-size: 13px;
+      border-radius: 8px; border: 1px solid #d8d7d0;
+      background: transparent; cursor: pointer;
+      color: #1a1a18; font-family: inherit; transition: all .15s;
+    }
+    .btn:hover   { background: #f0efe8; }
+    .btn.primary { background: #e6f1fb; color: #185fa5; border-color: #b5d4f4; }
+    .btn.danger  { background: #fcebeb; color: #a32d2d; border-color: #f7c1c1; }
+    .btn.full    { width: 100%; display: block; padding: 11px; margin-top: 4px; }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 8px; margin-bottom: 16px;
+    }
+    .stat-card {
+      background: #fff; border-radius: 8px; padding: 10px;
+      text-align: center; border: 1px solid #e8e7e0;
+    }
+    .stat-num { font-size: 22px; font-weight: 600; }
+    .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+    /* ── FILTER ── */
+    .filter-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .filter-row input  { flex: 1; }
+    .filter-row select { width: auto; flex-shrink: 0; }
+
+    /* ── LIST ── */
+    .oficio-list { display: flex; flex-direction: column; gap: 8px; }
+    .oficio-item {
+      background: #fff; border: 1px solid #e8e7e0;
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .oficio-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 8px;
+    }
+    .oficio-nombre { font-size: 14px; font-weight: 600; flex: 1; line-height: 1.35; }
+    .oficio-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+    .badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; }
+    .badge-pendiente  { background: #faeeda; color: #633806; }
+    .badge-proceso    { background: #e6f1fb; color: #0c447c; }
+    .badge-completado { background: #eaf3de; color: #27500a; }
+    .badge-date       { background: #f0efe8; color: #666; }
+    .oficio-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .ico-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid #d8d7d0; background: transparent;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 15px; color: #777770; transition: all .15s;
+    }
+    .ico-btn:hover { background: #f0efe8; }
+    .oficio-notas { font-size: 12px; color: #888; margin-top: 5px; }
+    .edit-inline {
+      width: 100%; padding: 6px 8px; font-size: 14px;
+      border-radius: 8px; border: 1px solid #185fa5;
+      background: #fff; color: #1a1a18; font-family: inherit; margin-bottom: 6px;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 40px 20px; color: #aaa; font-size: 14px; }
+    .empty-state i { font-size: 40px; display: block; margin-bottom: 10px; opacity: .4; }
+
+    /* ── CSV SECTION ── */
+    .csv-card {
+      background: #fff; border: 1px solid #e8e7e0;
+      border-radius: 12px; padding: 16px; margin-top: 12px;
+    }
+    .csv-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .csv-card p  { font-size: 12px; color: #888; margin-bottom: 12px; line-height: 1.5; }
+    .csv-btns    { display: flex; gap: 8px; }
+
+    .hint { font-size: 12px; color: #aaa; line-height: 1.5; margin-top: 8px; }
+
+    /* ── INSTALL BANNER ── */
+    #installBanner {
+      background: #e6f1fb; border: 1px solid #b5d4f4;
+      border-radius: 10px; padding: 12px 14px;
+      margin: 12px 16px 0; display: none;
+      align-items: center; gap: 10px;
+    }
+    #installBanner p { font-size: 13px; color: #0c447c; flex: 1; line-height: 1.4; }
+    #installBanner button {
+      padding: 7px 14px; font-size: 13px; border-radius: 8px;
+      border: none; background: #185fa5; color: #fff;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Banner instalar en pantalla de inicio -->
+<div id="installBanner">
+  <p><i class="ti ti-device-mobile" style="margin-right:4px"></i>Agrega esta app a tu pantalla de inicio para usarla como app nativa.</p>
+  <button onclick="instalarApp()">Instalar</button>
+</div>
+
+<div id="app" style="max-width:440px;margin:0 auto;padding-bottom:2rem;">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1><i class="ti ti-school" style="font-size:16px;margin-right:6px;vertical-align:-1px"></i>Asistente Docente</h1>
+        <p id="contadorHeader">Cargando...</p>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="ico-btn" onclick="exportarCSV()" title="Exportar CSV">
+          <i class="ti ti-download"></i>
+        </button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('voz')"    id="tab-voz">   <i class="ti ti-microphone"></i> Voz</button>
+      <button class="tab"        onclick="switchTab('manual')" id="tab-manual"><i class="ti ti-edit"></i> Manual</button>
+      <button class="tab"        onclick="switchTab('lista')"  id="tab-lista"> <i class="ti ti-list"></i> Oficios</button>
+    </div>
+  </div>
+
+  <!-- ══ PESTAÑA VOZ ══ -->
+  <div class="section active" id="sec-voz">
+    <div class="mic-area">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()">
+        <i class="ti ti-microphone" id="micIcon"></i>
+      </button>
+      <p class="mic-status" id="micStatus">Toca el micrófono para registrar un oficio</p>
+    </div>
+
+    <div class="waveform" id="waveform">
+      <span id="b1"></span><span id="b2"></span><span id="b3"></span>
+      <span id="b4"></span><span id="b5"></span><span id="b6"></span>
+      <span id="b7"></span><span id="b8"></span>
+    </div>
+
+    <div id="transcriptBox" class="transcript-box placeholder">
+      El texto de tu nota aparecerá aquí...
+    </div>
+
+    <div id="detectedCard" class="detected-card">
+      <p class="detected-label">Oficio detectado</p>
+      <p class="detected-name" id="detectedName">—</p>
+      <p class="field-label">Estatus</p>
+      <select id="detectedStatus">
+        <option>Pendiente</option>
+        <option>En proceso</option>
+        <option>Completado</option>
+      </select>
+      <div class="action-btns">
+        <button class="btn primary" onclick="addFromVoice()"><i class="ti ti-plus"></i> Agregar</button>
+        <button class="btn"         onclick="editDetected()"><i class="ti ti-edit"></i> Editar</button>
+        <button class="btn danger"  onclick="clearVoice()">  <i class="ti ti-x"></i> Descartar</button>
+      </div>
+    </div>
+
+    <p class="hint">
+      Ejemplos: <em>"Agregar solicitud de materiales pendiente"</em>,
+      <em>"Circular informativa completada"</em>,
+      <em>"Permiso económico en proceso"</em>
+    </p>
+  </div>
+
+  <!-- ══ PESTAÑA MANUAL ══ -->
+  <div class="section" id="sec-manual">
+    <p class="field-label">Nombre del oficio *</p>
+    <div class="field-row">
+      <input type="text" id="manualNombre" placeholder="Ej. Solicitud de materiales..." />
+    </div>
+    <p class="field-label">Estatus</p>
+    <div class="field-row">
+      <select id="manualStatus">
+        <option>Pendiente</option>
+        <option>En proceso</option>
+        <option>Completado</option>
+      </select>
+    </div>
+    <p class="field-label">Notas (opcional)</p>
+    <div class="field-row">
+      <input type="text" id="manualNotas" placeholder="Observaciones adicionales..." />
+    </div>
+    <button class="btn primary full" onclick="addManual()">
+      <i class="ti ti-plus"></i> Agregar oficio
+    </button>
+  </div>
+
+  <!-- ══ PESTAÑA LISTA ══ -->
+  <div class="section" id="sec-lista">
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#BA7517" id="s-pend">0</div><div class="stat-lbl">Pendientes</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#3B6D11" id="s-comp">0</div><div class="stat-lbl">Completados</div></div>
+    </div>
+
+    <div class="filter-row">
+      <input type="text" id="searchBox" placeholder="Buscar oficio..." oninput="renderList()" />
+      <select id="filterStatus" onchange="renderList()">
+        <option value="">Todos</option>
+        <option value="Pendiente">Pendientes</option>
+        <option value="En proceso">En proceso</option>
+        <option value="Completado">Completados</option>
+      </select>
+    </div>
+
+    <div class="oficio-list" id="oficioList"></div>
+
+    <!-- Exportar CSV -->
+    <div class="csv-card">
+      <h3><i class="ti ti-file-spreadsheet" style="margin-right:5px;vertical-align:-2px"></i>Exportar datos</h3>
+      <p>Descarga todos tus oficios en un archivo CSV que puedes abrir en Excel o Google Sheets.</p>
+      <div class="csv-btns">
+        <button class="btn primary" onclick="exportarCSV()">
+          <i class="ti ti-download"></i> Descargar CSV
+        </button>
+        <button class="btn danger" onclick="borrarTodo()">
+          <i class="ti ti-trash"></i> Borrar todo
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════
+//  ESTADO — todo vive en localStorage del navegador
+// ════════════════════════════════════════════════
+var STORAGE_KEY = 'asistente_docente_oficios';
+var oficios = [];
+
+var recognition  = null;
+var isRecording  = false;
+var waveInterval = null;
+var deferredInstallPrompt = null;
+
+// ════════════════════════════════════════════════
+//  PERSISTENCIA LOCAL
+// ════════════════════════════════════════════════
+function cargar() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    oficios = raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    oficios = [];
+  }
+}
+
+function guardar() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(oficios));
+}
+
+// ════════════════════════════════════════════════
+//  INICIO
+// ════════════════════════════════════════════════
+window.onload = function() {
+  cargar();
+  renderStats();
+  renderList();
+  actualizarContadorHeader();
+
+  // Capturar el evento de instalación PWA (Android Chrome)
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.getElementById('installBanner').style.display = 'flex';
+  });
+};
+
+function instalarApp() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(function() {
+    deferredInstallPrompt = null;
+    document.getElementById('installBanner').style.display = 'none';
+  });
+}
+
+// ════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════
+function switchTab(name) {
+  ['voz','manual','lista'].forEach(function(n) {
+    document.getElementById('sec-'+n).classList.toggle('active', n === name);
+    document.getElementById('tab-'+n).classList.toggle('active', n === name);
+  });
+  if (name === 'lista') { renderStats(); renderList(); }
+}
+
+// ════════════════════════════════════════════════
+//  MICRÓFONO — SpeechRecognition nativa del SO
+//  Funciona en Chrome Android cuando la página
+//  está servida en HTTPS (GitHub Pages lo cumple)
+// ════════════════════════════════════════════════
+function toggleMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    toast('Tu navegador no soporta voz. Usa Chrome en Android.');
+    return;
+  }
+  isRecording ? stopMic() : startMic();
+}
+
+function startMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang           = 'es-MX';
+  recognition.continuous     = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micIcon').className = 'ti ti-player-stop';
+    document.getElementById('micStatus').textContent = 'Escuchando... habla ahora';
+    var tb = document.getElementById('transcriptBox');
+    tb.classList.remove('placeholder');
+    tb.textContent = '';
+    document.getElementById('waveform').style.display = 'flex';
+    startWave();
+  };
+
+  recognition.onresult = function(e) {
+    var interim = '', final = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    var texto = final || interim;
+    document.getElementById('transcriptBox').textContent = texto;
+  };
+
+  recognition.onend = function() {
+    isRecording = false;
+    stopWave();
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micIcon').className = 'ti ti-microphone';
+    document.getElementById('micStatus').textContent = 'Toca el micrófono para grabar otro oficio';
+    document.getElementById('waveform').style.display = 'none';
+
+    var texto = document.getElementById('transcriptBox').textContent.trim();
+    if (texto && !texto.includes('aparecerá')) {
+      procesarTexto(texto);
+    } else {
+      var tb = document.getElementById('transcriptBox');
+      tb.classList.add('placeholder');
+      tb.textContent = 'El texto de tu nota aparecerá aquí...';
+    }
+  };
+
+  recognition.onerror = function(e) {
+    isRecording = false;
+    stopWave();
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micIcon').className = 'ti ti-microphone';
+    document.getElementById('waveform').style.display = 'none';
+
+    var mensajes = {
+      'not-allowed' : 'Permiso de micrófono denegado. Ve a Configuración del sitio en Chrome y permite el micrófono.',
+      'no-speech'   : 'No se detectó voz. Intenta de nuevo.',
+      'network'     : 'Error de red. Verifica tu conexión.',
+      'aborted'     : 'Grabación cancelada.'
+    };
+    document.getElementById('micStatus').textContent =
+      mensajes[e.error] || ('Error: ' + e.error);
+  };
+
+  recognition.start();
+}
+
+function stopMic() {
+  if (recognition) recognition.stop();
+}
+
+// ════════════════════════════════════════════════
+//  WAVEFORM
+// ════════════════════════════════════════════════
+function startWave() {
+  var ids = ['b1','b2','b3','b4','b5','b6','b7','b8'];
+  waveInterval = setInterval(function() {
+    ids.forEach(function(id) {
+      var h = 4 + Math.random() * 26;
+      document.getElementById(id).style.height = h + 'px';
+    });
+  }, 110);
+}
+
+function stopWave() {
+  clearInterval(waveInterval);
+  ['b1','b2','b3','b4','b5','b6','b7','b8'].forEach(function(id) {
+    document.getElementById(id).style.height = '6px';
+  });
+}
+
+// ════════════════════════════════════════════════
+//  PROCESAMIENTO DE TEXTO
+//  Detecta nombre del oficio y estatus sugerido
+// ════════════════════════════════════════════════
+function procesarTexto(texto) {
+  var nombre = extraerNombre(texto);
+  var status = extraerStatus(texto);
+  document.getElementById('detectedName').textContent   = nombre;
+  document.getElementById('detectedStatus').value       = status;
+  document.getElementById('detectedCard').style.display = 'block';
+}
+
+function extraerNombre(texto) {
+  var t = texto.toLowerCase();
+
+  // Quitar verbos de acción al inicio
+  t = t.replace(/^(agregar|registrar|añadir|nuevo|guardar|anotar)\s+(oficio\s+(de\s+)?)?/i, '');
+
+  // Quitar palabras de estatus al final
+  t = t.replace(/\s+(pendiente|en proceso|completado|terminado|listo|entregado|tramitando)\s*$/i, '');
+
+  // Si empieza con "oficio de/del/..." limpiar eso también
+  t = t.replace(/^oficio\s+(de\s+|del\s+|para\s+)?/i, '');
+
+  return capitalizar(t.trim().substring(0, 80));
+}
+
+function extraerStatus(texto) {
+  var t = texto.toLowerCase();
+  if (/completado|terminado|listo|entregado|concluido/.test(t)) return 'Completado';
+  if (/en proceso|proceso|tramitando|revisión|revisando/.test(t)) return 'En proceso';
+  return 'Pendiente';
+}
+
+function capitalizar(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+// ════════════════════════════════════════════════
+//  ACCIONES TARJETA DETECTADA
+// ════════════════════════════════════════════════
+function addFromVoice() {
+  var nombre = document.getElementById('detectedName').textContent.trim();
+  var status = document.getElementById('detectedStatus').value;
+  if (!nombre || nombre === '—') return;
+  agregarOficio(nombre, status, '');
+  clearVoice();
+  switchTab('lista');
+}
+
+function editDetected() {
+  var actual  = document.getElementById('detectedName').textContent;
+  var nuevo   = prompt('Editar nombre del oficio:', actual);
+  if (nuevo && nuevo.trim())
+    document.getElementById('detectedName').textContent = capitalizar(nuevo.trim());
+}
+
+function clearVoice() {
+  var tb = document.getElementById('transcriptBox');
+  tb.textContent = 'El texto de tu nota aparecerá aquí...';
+  tb.classList.add('placeholder');
+  document.getElementById('detectedCard').style.display = 'none';
+  document.getElementById('detectedName').textContent   = '—';
+}
+
+// ════════════════════════════════════════════════
+//  AGREGAR MANUAL
+// ════════════════════════════════════════════════
+function addManual() {
+  var nombre = document.getElementById('manualNombre').value.trim();
+  if (!nombre) { toast('Escribe el nombre del oficio'); return; }
+  var status = document.getElementById('manualStatus').value;
+  var notas  = document.getElementById('manualNotas').value.trim();
+  agregarOficio(capitalizar(nombre), status, notas);
+  document.getElementById('manualNombre').value = '';
+  document.getElementById('manualNotas').value  = '';
+  document.getElementById('manualStatus').value = 'Pendiente';
+  switchTab('lista');
+}
+
+// ════════════════════════════════════════════════
+//  CRUD LOCAL
+// ════════════════════════════════════════════════
+function agregarOficio(nombre, status, notas) {
+  var oficio = {
+    id    : Date.now(),
+    nombre: nombre,
+    status: status,
+    notas : notas,
+    fecha : new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' })
+  };
+  oficios.unshift(oficio);
+  guardar();
+  renderStats();
+  renderList();
+  actualizarContadorHeader();
+  toast('✓ Oficio guardado');
+}
+
+function eliminarOficio(id) {
+  if (!confirm('¿Eliminar este oficio?')) return;
+  oficios = oficios.filter(function(o) { return o.id !== id; });
+  guardar();
+  renderStats();
+  renderList();
+  actualizarContadorHeader();
+  toast('Oficio eliminado');
+}
+
+function cambiarStatus(id, nuevoStatus) {
+  var o = oficios.find(function(x) { return x.id === id; });
+  if (!o) return;
+  o.status = nuevoStatus;
+  guardar();
+  renderStats();
+  toast('✓ Estatus actualizado');
+}
+
+function iniciarEdicion(id) {
+  var item   = document.querySelector('[data-id="'+id+'"]');
+  var nameEl = item.querySelector('.oficio-nombre');
+  var actual = nameEl.textContent.trim();
+  nameEl.innerHTML = '<input class="edit-inline" id="ei-'+id+'" value="'+escHtml(actual)+'" />';
+  var input = document.getElementById('ei-'+id);
+  input.focus();
+  input.addEventListener('blur',    function() { terminarEdicion(id); });
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') terminarEdicion(id); });
+}
+
+function terminarEdicion(id) {
+  var input = document.getElementById('ei-'+id);
+  if (!input) return;
+  var nuevo = input.value.trim();
+  if (nuevo) {
+    var o = oficios.find(function(x){ return x.id === id; });
+    if (o) { o.nombre = capitalizar(nuevo); guardar(); }
+  }
+  renderList();
+}
+
+function borrarTodo() {
+  if (!oficios.length) { toast('No hay oficios registrados'); return; }
+  if (!confirm('¿Borrar TODOS los oficios? Esta acción no se puede deshacer.')) return;
+  oficios = [];
+  guardar();
+  renderStats();
+  renderList();
+  actualizarContadorHeader();
+  toast('Todos los oficios eliminados');
+}
+
+// ════════════════════════════════════════════════
+//  EXPORTAR CSV
+// ════════════════════════════════════════════════
+function exportarCSV() {
+  if (!oficios.length) { toast('No hay oficios para exportar'); return; }
+
+  var filas = [['Nombre del Oficio', 'Estatus', 'Fecha de Registro', 'Notas']];
+  oficios.forEach(function(o) {
+    filas.push([
+      '"' + (o.nombre || '').replace(/"/g, '""') + '"',
+      '"' + (o.status || '') + '"',
+      '"' + (o.fecha  || '') + '"',
+      '"' + (o.notas  || '').replace(/"/g, '""') + '"'
+    ]);
+  });
+
+  var csv  = filas.map(function(r){ return r.join(','); }).join('\r\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  var hoy  = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = 'oficios_docente_' + hoy + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ CSV descargado (' + oficios.length + ' oficios)');
+}
+
+// ════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════
+function actualizarContadorHeader() {
+  var pend = oficios.filter(function(o){ return o.status === 'Pendiente'; }).length;
+  document.getElementById('contadorHeader').textContent =
+    oficios.length + ' oficios' + (pend ? ' · ' + pend + ' pendientes' : '');
+}
+
+function renderStats() {
+  var total = oficios.length;
+  var pend  = oficios.filter(function(o){ return o.status === 'Pendiente';  }).length;
+  var comp  = oficios.filter(function(o){ return o.status === 'Completado'; }).length;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pend').textContent  = pend;
+  document.getElementById('s-comp').textContent  = comp;
+}
+
+function renderList() {
+  var q  = (document.getElementById('searchBox').value    || '').toLowerCase();
+  var fs = (document.getElementById('filterStatus').value || '');
+
+  var lista = oficios.filter(function(o) {
+    var mq = !q  || o.nombre.toLowerCase().includes(q) || (o.notas||'').toLowerCase().includes(q);
+    var ms = !fs || o.status === fs;
+    return mq && ms;
+  });
+
+  var container = document.getElementById('oficioList');
+
+  if (!lista.length) {
+    container.innerHTML =
+      '<div class="empty-state">' +
+        '<i class="ti ti-file-off"></i>' +
+        (oficios.length ? 'Sin resultados para ese filtro.' : 'Sin oficios registrados.<br>Usa la pestaña Voz o Manual.') +
+      '</div>';
+    return;
+  }
+
+  var bc = function(s) {
+    return s === 'Pendiente' ? 'badge-pendiente' :
+           s === 'En proceso' ? 'badge-proceso' : 'badge-completado';
+  };
+
+  container.innerHTML = lista.map(function(o) {
+    return '<div class="oficio-item" data-id="' + o.id + '">' +
+      '<div class="oficio-top">' +
+        '<div style="flex:1">' +
+          '<div class="oficio-nombre">' + escHtml(o.nombre) + '</div>' +
+          '<div class="oficio-badges">' +
+            '<span class="badge ' + bc(o.status) + '">' + o.status + '</span>' +
+            '<span class="badge badge-date">' +
+              '<i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>' + o.fecha +
+            '</span>' +
+          '</div>' +
+          (o.notas ? '<p class="oficio-notas">' + escHtml(o.notas) + '</p>' : '') +
+        '</div>' +
+        '<div class="oficio-actions">' +
+          '<button class="ico-btn" onclick="iniciarEdicion(' + o.id + ')" title="Editar nombre">' +
+            '<i class="ti ti-edit"></i>' +
+          '</button>' +
+          '<button class="ico-btn" onclick="eliminarOficio(' + o.id + ')" title="Eliminar">' +
+            '<i class="ti ti-trash"></i>' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+      '<select onchange="cambiarStatus(' + o.id + ', this.value)" style="margin-top:8px;width:100%">' +
+        '<option' + (o.status === 'Pendiente'  ? ' selected' : '') + '>Pendiente</option>'  +
+        '<option' + (o.status === 'En proceso' ? ' selected' : '') + '>En proceso</option>' +
+        '<option' + (o.status === 'Completado' ? ' selected' : '') + '>Completado</option>' +
+      '</select>' +
+    '</div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+//  UTILIDADES
+// ════════════════════════════════════════════════
+function escHtml(s) {
+  return (s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+</script>
+
+<!-- SERVICE WORKER para modo offline / PWA -->
+<script>
+if ('serviceWorker' in navigator) {
+  // Inline service worker — no necesita archivo separado
+  var swCode = [
+    "const CACHE = 'docente-v1';",
+    "const ASSETS = ['/'];",
+    "self.addEventListener('install', e => {",
+    "  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));",
+    "});",
+    "self.addEventListener('fetch', e => {",
+    "  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));",
+    "});"
+  ].join('\n');
+
+  var blob = new Blob([swCode], { type: 'application/javascript' });
+  var swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(function(){});
+}
+</script>
+
+</body>
+</html>
