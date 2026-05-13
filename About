@@ -1,0 +1,25 @@
+Asistente de Gestión Administrativa (v1.0)
+Desarrollado como una solución de automatización personal para la optimización de procesos docentes y administrativos.
+
+Filosofía del Proyecto:
+
+Privacidad Total: Los datos no salen de este dispositivo. La app utiliza almacenamiento local (localStorage), eliminando la dependencia de servidores externos o bases de datos en la nube.
+
+Eficiencia Voice-First: Diseñada para capturar gestiones en tiempo real mediante dictado natural.
+
+Soberanía de Datos: Toda la información es propiedad del usuario y puede ser exportada en formato estándar (CSV) en cualquier momento.
+
+Desarrollado por:
+
+Prof. Gerardo Rincón
+
+Investigador en la línea de: Optimización Computacional Aplicada a la Automatización Industrial.
+
+Doctorante en Ingeniería Aplicada.
+
+¿Cómo funciona?
+Dictado: Usa los comandos "Agregar", "Modificar" o "Borrar" seguidos del nombre del oficio.
+
+Modo Offline: No requiere internet para registrar o consultar oficios; la red solo es necesaria para el motor de reconocimiento de voz de Android (según configuración del sistema).
+
+Instalación: Al ser una PWA, puedes usarla como una aplicación nativa añadiéndola a tu pantalla de inicio desde el menú de Chrome.
